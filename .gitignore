@@ -1,0 +1,13 @@
+cat <<EOF > .gitignore
+.DS_Store
+*.xcuserdatad
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.pkg
+EOF
+
