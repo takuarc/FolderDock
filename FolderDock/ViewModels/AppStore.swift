@@ -3,6 +3,13 @@ import AppKit
 import Combine
 import UniformTypeIdentifiers
 
+// NEW: Theme Enum
+enum AppTheme: String, CaseIterable, Codable {
+    case system = "System"
+    case light = "Light"
+    case dark = "Dark"
+}
+
 class AppStore: ObservableObject {
     @Published var apps: [AppItem] = []
     @Published var iconSize: CGFloat = 64
@@ -11,18 +18,19 @@ class AppStore: ObservableObject {
     @Published var systemApps: [SystemApp] = []
     @Published var isEditMode: Bool = false
     
-    // DYNAMIC KEYS: Based on the actual filename of the .app
-    private var saveKey: String {
-        return "saved_apps_\(ProcessInfo.processInfo.processName)"
-    }
+    // NEW: Settings properties
+    @Published var theme: AppTheme = .system
+    @Published var textSize: CGFloat = 12.0
     
-    private var settingsKey: String {
-        return "saved_settings_\(ProcessInfo.processInfo.processName)"
-    }
+    // Dynamic keys for separate instances
+    private var saveKey: String { "saved_apps_\(ProcessInfo.processInfo.processName)" }
+    private var settingsKey: String { "saved_settings_\(ProcessInfo.processInfo.processName)" }
     
     init() {
         loadData()
     }
+    
+    // ... [Keep loadSystemApps, isAppSelected, toggleApp, moveApp(list), moveApp(grid) same as before] ...
     
     func loadSystemApps() {
          DispatchQueue.global(qos: .userInitiated).async {
@@ -46,7 +54,7 @@ class AppStore: ObservableObject {
         }
         saveApps()
     }
-    
+
     func moveApp(from source: IndexSet, to destination: Int) {
         apps.move(fromOffsets: source, toOffset: destination)
         saveApps()
@@ -69,7 +77,9 @@ class AppStore: ObservableObject {
         let settings: [String: Any] = [
             "iconSize": iconSize,
             "isListView": isListView,
-            "lastWindowSize": sizeDict
+            "lastWindowSize": sizeDict,
+            "theme": theme.rawValue,       // NEW
+            "textSize": textSize           // NEW
         ]
         UserDefaults.standard.set(settings, forKey: settingsKey)
     }
@@ -88,9 +98,16 @@ class AppStore: ObservableObject {
                let w = sizeDict["width"], let h = sizeDict["height"] {
                 self.lastWindowSize = CGSize(width: w, height: h)
             }
+            
+            // NEW: Load Theme & Text Size
+            if let themeString = settings["theme"] as? String, let loadedTheme = AppTheme(rawValue: themeString) {
+                self.theme = loadedTheme
+            }
+            if let size = settings["textSize"] as? CGFloat { self.textSize = size }
         }
     }
     
+    // ... [Keep launch, removeApp, saveApps same as before] ...
     func launch(_ app: AppItem) {
         if let url = app.url {
             let access = url.startAccessingSecurityScopedResource()
